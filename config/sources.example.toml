@@ -1,0 +1,32 @@
+# The Few — example source list.
+#
+# `the-few setup` seeds your real list at ~/.the-few/sources.toml (override the
+# location with THE_FEW_HOME). This file is just a reference you can copy from.
+#
+# The atom is a *source*: a publication or org blog that shares high-signal content
+# publicly, at a steady cadence. Keep this list SMALL and hand-picked — the editorial
+# taste is the whole point. Quantity is the enemy; a finite briefing is the feature.
+#
+# fetch strategies:
+#   html_list  — scrape a listing page for links containing `link_pattern`
+#   sitemap    — pull URLs from a sitemap (best when it carries <lastmod> dates)
+
+[[sources]]
+name = "Claude Blog"
+slug = "claude-blog"
+url = "https://claude.com/blog"
+fetch = "html_list"
+link_pattern = "/blog/"
+base = "https://claude.com"
+tags = ["ai", "engineering"]
+
+# A sitemap-based source (use when the sitemap carries <lastmod> dates):
+# [[sources]]
+# name = "Example Lab"
+# slug = "example-lab"
+# url = "https://example.com/blog"
+# fetch = "sitemap"
+# sitemap_url = "https://example.com/sitemap.xml"
+# link_pattern = "/blog/"
+# base = "https://example.com"
+# tags = ["research"]

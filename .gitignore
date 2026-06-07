@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.DS_Store
+
+# The Few — local data (personal; never commit)
+# Real data lives in ~/.the-few/ (THE_FEW_HOME), but ignore these defensively too.
+*.db
+the_few.db
+config/sources.toml
+config/people.toml
+
+# Generated audio briefings
+*.aiff
+*.mp3
+*.wav
+
+# Superseded design doc (people-centric draft, kept locally only)
+THE_FEW_PLAN.md
