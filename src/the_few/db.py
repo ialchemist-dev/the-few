@@ -73,6 +73,8 @@ class Store:
             self.conn.execute(
                 "ALTER TABLE items ADD COLUMN status TEXT NOT NULL DEFAULT 'new'"
             )
+        if "read_at" not in cols:
+            self.conn.execute("ALTER TABLE items ADD COLUMN read_at TEXT")
 
     def close(self) -> None:
         self.conn.close()
@@ -127,6 +129,52 @@ class Store:
     def set_status(self, item_id: int, status: str) -> None:
         self.conn.execute("UPDATE items SET status = ? WHERE id = ?", (status, item_id))
         self.conn.commit()
+
+    def set_read(self, item_id: int, read: bool = True) -> None:
+        self.conn.execute(
+            "UPDATE items SET read_at = ? WHERE id = ?",
+            (_now() if read else None, item_id),
+        )
+        self.conn.commit()
+
+    def query_items(
+        self,
+        *,
+        status: str | None = None,
+        unread: bool | None = None,
+        source: str | None = None,
+        contains: str | None = None,
+        since: str | None = None,
+        limit: int | None = None,
+    ) -> list[sqlite3.Row]:
+        """Flexible read query — the agent/skill's main interface into the store."""
+        clauses: list[str] = []
+        params: list = []
+        if status:
+            clauses.append("status = ?")
+            params.append(status)
+        if unread is True:
+            clauses.append("read_at IS NULL")
+        elif unread is False:
+            clauses.append("read_at IS NOT NULL")
+        if source:
+            clauses.append("source_slug = ?")
+            params.append(source)
+        if contains:
+            clauses.append("title LIKE ?")
+            params.append(f"%{contains}%")
+        if since:
+            clauses.append("published >= ?")
+            params.append(since)
+        where = (" WHERE " + " AND ".join(clauses)) if clauses else ""
+        sql = (
+            f"SELECT * FROM items{where} "
+            "ORDER BY (published IS NULL), published DESC, id DESC"
+        )
+        if limit is not None:
+            sql += " LIMIT ?"
+            params.append(limit)
+        return self.conn.execute(sql, params).fetchall()
 
     def get_item(self, item_id: int) -> sqlite3.Row | None:
         return self.conn.execute("SELECT * FROM items WHERE id = ?", (item_id,)).fetchone()

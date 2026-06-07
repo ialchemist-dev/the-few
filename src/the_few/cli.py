@@ -14,6 +14,7 @@ and only for an item you chose to keep.
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 
 from . import __version__
@@ -27,7 +28,7 @@ from .brief import (
 )
 from . import paths
 from .config import DEFAULT_SOURCES_TOML, Source, load_sources
-from .db import INTERESTED, NEW, Store
+from .db import DISMISSED, INTERESTED, NEW, Store
 
 
 def _log(msg: str) -> None:
@@ -36,6 +37,20 @@ def _log(msg: str) -> None:
 
 def _names(sources: list[Source]) -> dict[str, str]:
     return {s.slug: s.name for s in sources}
+
+
+def _item_dict(row, name_by_slug: dict[str, str]) -> dict:
+    """Stable, machine-readable shape of an item — the skill/agent contract."""
+    return {
+        "id": row["id"],
+        "source": row["source_slug"],
+        "source_name": name_by_slug.get(row["source_slug"], row["source_slug"]),
+        "title": row["title"],
+        "link": row["link"],
+        "published": row["published"],
+        "status": row["status"],
+        "read": row["read_at"] is not None,
+    }
 
 
 def cmd_brief(args: argparse.Namespace) -> int:
@@ -84,12 +99,15 @@ def cmd_list(args: argparse.Namespace) -> int:
 
 def cmd_open(args: argparse.Namespace) -> int:
     sources = load_sources(args.config)
+    if args.id is None and args.position is None:
+        print("give an item: `the-few open 2` (view position) or `--id 12`.", file=sys.stderr)
+        return 2
     with Store(args.db) as store:
-        item = store.view_item(args.position)
+        item = store.get_item(args.id) if args.id is not None else store.view_item(args.position)
         if item is None:
+            ref = f"id {args.id}" if args.id is not None else f"position {args.position}"
             print(
-                f"no item at position {args.position}. Run `the-few brief` or "
-                "`the-few list` first.",
+                f"no item at {ref}. Run `the-few brief`/`list`, or check the id.",
                 file=sys.stderr,
             )
             return 1
@@ -111,6 +129,8 @@ def cmd_open(args: argparse.Namespace) -> int:
             print(_summarize_item(store, item, source))
         else:
             print(text)
+
+        store.set_read(item["id"], True)  # opening an item marks it read
     return 0
 
 
@@ -169,6 +189,57 @@ def cmd_done(args: argparse.Namespace) -> int:
                 store.set_status(item["id"], DISMISSED)
                 archived += 1
     print(f"archived {archived}.")
+    return 0
+
+
+def cmd_query(args: argparse.Namespace) -> int:
+    """Read interface: filter items, output JSON (for agents) or a readable list."""
+    sources = load_sources(args.config)
+    names = _names(sources)
+    with Store(args.db) as store:
+        rows = store.query_items(
+            status=args.status,
+            unread=(True if args.unread else None),
+            source=args.source,
+            contains=args.contains,
+            since=args.since,
+            limit=args.limit,
+        )
+    if args.json:
+        print(json.dumps([_item_dict(r, names) for r in rows], ensure_ascii=False, indent=2))
+        return 0
+    # Human output keys on the stable item id (so `mark <id>` works without a view).
+    print(f"📡  THE FEW · {len(rows)} match" + ("es" if len(rows) != 1 else ""))
+    print("─" * 52)
+    for row in rows:
+        src = names.get(row["source_slug"], row["source_slug"])
+        flags = row["status"] + ("" if row["read_at"] else ", unread")
+        print(f"#{row['id']:<4} [{src}] {row['title']}")
+        print(f"      {row['published'] or ''} · {row['link']}  ({flags})")
+    return 0
+
+
+def cmd_mark(args: argparse.Namespace) -> int:
+    """Write interface: change item state by stable id (agent-friendly)."""
+    if not any([args.interested, args.dismissed, args.read, args.unread]):
+        print("specify an action: --interested / --dismissed / --read / --unread",
+              file=sys.stderr)
+        return 2
+    with Store(args.db) as store:
+        updated = 0
+        for item_id in args.ids:
+            if store.get_item(item_id) is None:
+                continue
+            if args.interested:
+                store.set_status(item_id, INTERESTED)
+            if args.dismissed:
+                store.set_status(item_id, DISMISSED)
+            if args.read:
+                store.set_read(item_id, True)
+            if args.unread:
+                store.set_read(item_id, False)
+            updated += 1
+    print(f"updated {updated} item(s).")
     return 0
 
 
@@ -237,10 +308,30 @@ def build_parser() -> argparse.ArgumentParser:
     p_list = sub.add_parser("list", parents=[common], help="Show your reading list (kept items).")
     p_list.set_defaults(func=cmd_list)
 
-    p_open = sub.add_parser("open", parents=[common], help="Read an item in full.")
-    p_open.add_argument("position", type=int, help="Item number from the last brief/list.")
+    p_open = sub.add_parser("open", parents=[common], help="Read an item in full (marks it read).")
+    p_open.add_argument("position", type=int, nargs="?", help="Item number from the last brief/list.")
+    p_open.add_argument("--id", type=int, default=None, help="Open by stable item id instead.")
     p_open.add_argument("--summary", action="store_true", help="LLM summary instead of full text.")
     p_open.set_defaults(func=cmd_open)
+
+    p_query = sub.add_parser("query", parents=[common],
+                             help="Query items (JSON for agents, or a readable list).")
+    p_query.add_argument("--status", choices=[NEW, INTERESTED, DISMISSED], default=None)
+    p_query.add_argument("--unread", action="store_true", help="Only items not yet opened.")
+    p_query.add_argument("--source", default=None, help="Filter by source slug.")
+    p_query.add_argument("--contains", default=None, help="Title substring match.")
+    p_query.add_argument("--since", default=None, help="Published on/after YYYY-MM-DD.")
+    p_query.add_argument("--limit", type=int, default=None, help="Max results.")
+    p_query.add_argument("--json", action="store_true", help="Machine-readable JSON output.")
+    p_query.set_defaults(func=cmd_query)
+
+    p_mark = sub.add_parser("mark", parents=[common], help="Change item state by id (for agents).")
+    p_mark.add_argument("ids", nargs="+", type=int, help="Item ids, e.g. 12 15.")
+    p_mark.add_argument("--interested", action="store_true", help="Add to reading list.")
+    p_mark.add_argument("--dismissed", action="store_true", help="Archive.")
+    p_mark.add_argument("--read", action="store_true", help="Mark read.")
+    p_mark.add_argument("--unread", action="store_true", help="Mark unread.")
+    p_mark.set_defaults(func=cmd_mark)
 
     p_say = sub.add_parser("say", parents=[common], help="Read the current titles aloud (macOS `say`).")
     p_say.add_argument("--text", action="store_true", help="Print the spoken script instead of playing it.")
