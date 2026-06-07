@@ -1,0 +1,35 @@
+# The Few — your personal advisory board
+# Each person is a row. Add more as you discover them.
+
+[[people]]
+name = "Paul Graham"
+slug = "paul-graham"
+role = "Startup philosopher, essayist"
+sources = [
+  { type = "blog", url = "https://paulgraham.com/articles.html" },
+  { type = "rss", url = "https://paulgraham.com/rss.xml" },
+]
+alive = true
+tags = ["startups", "essay", "thinking"]
+
+[[people]]
+name = "Nassim Nicholas Taleb"
+slug = "nassim-taleb"
+role = "Risk philosopher, author of Black Swan"
+sources = [
+  { type = "twitter", url = "https://x.com/nntaleb" },
+  { type = "books", titles = ["The Black Swan", "Antifragile", "Skin in the Game"] },
+]
+alive = true
+tags = ["risk", "probability", "philosophy"]
+
+[[people]]
+name = "Charlie Munger"
+slug = "charlie-munger"
+role = "Investor, mental models advocate"
+sources = [
+  { type = "books", titles = ["Poor Charlie's Almanack"] },
+  { type = "transcripts", url = "https://www.rev.com/blog/tag/charlie-munger" },
+]
+alive = false
+tags = ["investing", "mental-models", "wisdom"]
