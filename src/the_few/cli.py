@@ -23,6 +23,7 @@ from .brief import (
     DEFAULT_SHOW,
     ingest_new,
     keep,
+    render_digest,
     render_items,
     todays_heading,
 )
@@ -243,6 +244,27 @@ def cmd_mark(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_digest(args: argparse.Namespace) -> int:
+    """Chat-ready message with clickable links — relay this output to the user verbatim."""
+    sources = load_sources(args.config)
+    names = _names(sources)
+    with Store(args.db) as store:
+        rows = store.query_items(
+            status=args.status,
+            unread=(True if args.unread else None),
+            source=args.source,
+            since=args.since,
+            limit=args.limit,
+        )
+    bits = []
+    if args.unread:
+        bits.append("unread")
+    bits.append(args.status)
+    heading = f"{' '.join(bits)} ({len(rows)})"
+    print(render_digest(rows, names, heading=heading))
+    return 0
+
+
 def cmd_setup(args: argparse.Namespace) -> int:
     """Create the data home, seed a source list, and initialize the database."""
     home = paths.ensure_home()
@@ -324,6 +346,16 @@ def build_parser() -> argparse.ArgumentParser:
     p_query.add_argument("--limit", type=int, default=None, help="Max results.")
     p_query.add_argument("--json", action="store_true", help="Machine-readable JSON output.")
     p_query.set_defaults(func=cmd_query)
+
+    p_digest = sub.add_parser("digest", parents=[common],
+                              help="Chat-ready message with clickable links (relay verbatim).")
+    p_digest.add_argument("--status", choices=[NEW, INTERESTED, DISMISSED], default=INTERESTED,
+                          help="Which items (default: interested).")
+    p_digest.add_argument("--unread", action="store_true", help="Only items not yet opened.")
+    p_digest.add_argument("--source", default=None, help="Filter by source slug.")
+    p_digest.add_argument("--since", default=None, help="Published on/after YYYY-MM-DD.")
+    p_digest.add_argument("--limit", type=int, default=None, help="Max results.")
+    p_digest.set_defaults(func=cmd_digest)
 
     p_mark = sub.add_parser("mark", parents=[common], help="Change item state by id (for agents).")
     p_mark.add_argument("ids", nargs="+", type=int, help="Item ids, e.g. 12 15.")

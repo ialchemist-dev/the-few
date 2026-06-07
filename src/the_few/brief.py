@@ -140,3 +140,20 @@ def keep(store: Store, positions: list[int]) -> tuple[list[str], list[str]]:
 
 def todays_heading(count: int, label: str) -> str:
     return f"THE FEW · {date.today().isoformat()} · {count} {label}"
+
+
+def render_digest(
+    rows: list[sqlite3.Row], name_by_slug: dict[str, str], *, heading: str | None = None
+) -> str:
+    """A chat-ready message. Every item puts its raw original URL on its own line so
+    it is directly clickable in any chat client — the link must never be dropped."""
+    title = heading or f"{len(rows)} item{'' if len(rows) == 1 else 's'}"
+    lines = [f"📡  The Few — {title}"]
+    if not rows:
+        lines += ["", "Nothing to report."]
+        return "\n".join(lines)
+    for i, row in enumerate(rows, start=1):
+        source = name_by_slug.get(row["source_slug"], row["source_slug"])
+        meta = " · ".join(x for x in (source, row["published"]) if x)
+        lines += ["", f"{i}. {row['title']}", f"   {meta}", f"   {row['link']}"]
+    return "\n".join(lines)

@@ -50,8 +50,14 @@ the-few open 2         # read item 2 in full
 the-few open 2 --summary   # ...or get an LLM summary (needs a key)
 the-few say            # read the current titles aloud (macOS `say`)
 the-few done 2         # archive item 2 from the reading list
+the-few digest --status interested --unread   # chat-ready message with clickable links
 the-few sources        # list your curated sources
 ```
+
+For agents/automation: `the-few query [filters] --json` (read) and `the-few mark
+<id> --interested|--dismissed|--read` (write) operate on stable item ids; `the-few
+digest [filters]` prints a ready-to-send message where every item carries its raw,
+clickable link.
 
 `brief` prints to stdout, progress to stderr. Numbers refer to the last
 `brief`/`list` you ran, so `keep 1 3` / `open 2` always mean "from what I just saw".

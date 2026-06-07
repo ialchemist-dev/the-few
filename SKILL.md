@@ -35,13 +35,28 @@ marks it `read`. "Interested but unread" is the user's live reading list.
 
 Data lives in `~/.the-few/` (the database + their `sources.toml`), never in the repo.
 
+## Replying to the user — the #1 rule
+
+**Every article you mention MUST include its original URL, verbatim, on its own
+line, so the user can click straight through.** Never drop, shorten, wrap, or
+"clean up" a link. The whole product is the click-through to the source.
+
+The easiest way to guarantee this: when the user wants to *see* their articles
+(what's new, what they're interested in, their reading list), run `the-few digest
+...` and **relay its output verbatim** — it already formats each item with the raw,
+clickable link. Use `the-few query --json` only when you need the data to reason or
+act (e.g. to find an id to `mark`), not as the thing you paste back.
+
 ## Routing user intent
+
+For anything the user will *read*, prefer `digest` (clickable links, relay verbatim).
+Use `query --json` only to get ids for `mark`/`open`.
 
 | User says | Action |
 |-----------|--------|
-| "what's new", "anything new in my blogs/feeds" | `the-few brief` to fetch, then `the-few query --status new --json` to read the result |
-| "what am I interested in", "my reading list" | `the-few query --status interested --json` |
-| "what haven't I read", "anything unread" | `the-few query --status interested --unread --json` |
+| "what's new", "anything new in my blogs/feeds" | `the-few brief --quiet` to fetch, then `the-few digest --status new` and relay verbatim |
+| "what am I interested in", "my reading list" | `the-few digest --status interested` and relay verbatim |
+| "what haven't I read", "anything unread" | `the-few digest --status interested --unread` and relay verbatim |
 | "I'm interested in / keep #ID" | `the-few mark <id> --interested` |
 | "dismiss / not interested #ID" | `the-few mark <id> --dismissed` |
 | "read me / open / summarize #ID" | `the-few open --id <id> --summary` (or without `--summary` for full text) |
@@ -57,17 +72,17 @@ Data lives in `~/.the-few/` (the database + their `sources.toml`), never in the 
 
 ## Digest (what to send the user)
 
-A good briefing = new items + things they kept but haven't read:
+`the-few digest` prints a chat-ready message with a clickable link per item — send
+its output to the user **verbatim**. A good briefing = new items + kept-but-unread:
 
 ```bash
-the-few brief --quiet                              # fetch the latest
-the-few query --status new --json                  # newly surfaced
-the-few query --status interested --unread --json  # kept, not yet read
+the-few brief --quiet                          # fetch the latest
+the-few digest --status new                    # newly surfaced (relay verbatim)
+the-few digest --status interested --unread    # kept, not yet read (relay verbatim)
 ```
 
-Render these as a short chat message (source · title · link). Offer to `open`
-anything they want in full or summarized. For a scheduled briefing, run this on a
-cron and post the result to the user's chat.
+Offer to `open` anything they want in full or summarized. For a scheduled briefing,
+run this on a cron and post the digest output to the user's chat.
 
 ## Adding a source
 
@@ -98,7 +113,8 @@ If the `the-few` command is missing or `~/.the-few/` doesn't exist:
 ## Command reference
 
 - `the-few brief [--show N] [--quiet]` — fetch new items; print the numbered title list
-- `the-few query [--status new|interested|dismissed] [--unread] [--source SLUG] [--contains TEXT] [--since YYYY-MM-DD] [--limit N] [--json]` — read interface
+- `the-few digest [--status ...] [--unread] [--source SLUG] [--since DATE] [--limit N]` — chat-ready message with clickable links (relay verbatim; default status: interested)
+- `the-few query [--status new|interested|dismissed] [--unread] [--source SLUG] [--contains TEXT] [--since YYYY-MM-DD] [--limit N] [--json]` — read interface (for ids/reasoning)
 - `the-few mark <id...> [--interested|--dismissed|--read|--unread]` — change state by id
 - `the-few open (<pos> | --id <id>) [--summary]` — read full text or LLM summary (marks read)
 - `the-few keep <pos...>` / `the-few done <pos...>` — interactive triage by list position
