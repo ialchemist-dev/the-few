@@ -261,7 +261,7 @@ def cmd_digest(args: argparse.Namespace) -> int:
         bits.append("unread")
     bits.append(args.status)
     heading = f"{' '.join(bits)} ({len(rows)})"
-    print(render_digest(rows, names, heading=heading))
+    print(render_digest(rows, names, heading=heading, style=args.format))
     return 0
 
 
@@ -355,6 +355,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_digest.add_argument("--source", default=None, help="Filter by source slug.")
     p_digest.add_argument("--since", default=None, help="Published on/after YYYY-MM-DD.")
     p_digest.add_argument("--limit", type=int, default=None, help="Max results.")
+    p_digest.add_argument("--format", choices=["plain", "markdown"], default="plain",
+                          help="plain = raw URLs (clickable anywhere); markdown = title-as-link.")
     p_digest.set_defaults(func=cmd_digest)
 
     p_mark = sub.add_parser("mark", parents=[common], help="Change item state by id (for agents).")

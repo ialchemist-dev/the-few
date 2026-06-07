@@ -143,10 +143,19 @@ def todays_heading(count: int, label: str) -> str:
 
 
 def render_digest(
-    rows: list[sqlite3.Row], name_by_slug: dict[str, str], *, heading: str | None = None
+    rows: list[sqlite3.Row],
+    name_by_slug: dict[str, str],
+    *,
+    heading: str | None = None,
+    style: str = "plain",
 ) -> str:
-    """A chat-ready message. Every item puts its raw original URL on its own line so
-    it is directly clickable in any chat client — the link must never be dropped."""
+    """A chat-ready message. The original link must never be dropped.
+
+    style="plain":    raw URL on its own line — clickable in any client (incl. Telegram),
+                      no parse mode required. The safe default.
+    style="markdown": the title is the clickable link, `[title](url)` — cleaner, but the
+                      sender must use Markdown parse mode or the syntax shows literally.
+    """
     title = heading or f"{len(rows)} item{'' if len(rows) == 1 else 's'}"
     lines = [f"📡  The Few — {title}"]
     if not rows:
@@ -155,5 +164,10 @@ def render_digest(
     for i, row in enumerate(rows, start=1):
         source = name_by_slug.get(row["source_slug"], row["source_slug"])
         meta = " · ".join(x for x in (source, row["published"]) if x)
-        lines += ["", f"{i}. {row['title']}", f"   {meta}", f"   {row['link']}"]
+        if style == "markdown":
+            # Escape only the characters that break a Markdown link label.
+            label = (row["title"] or "").replace("[", "(").replace("]", ")")
+            lines += ["", f"{i}. [{label}]({row['link']})", f"   {meta}"]
+        else:
+            lines += ["", f"{i}. {row['title']}", f"   {meta}", f"   {row['link']}"]
     return "\n".join(lines)

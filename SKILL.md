@@ -47,6 +47,11 @@ The easiest way to guarantee this: when the user wants to *see* their articles
 clickable link. Use `the-few query --json` only when you need the data to reason or
 act (e.g. to find an id to `mark`), not as the thing you paste back.
 
+`digest` defaults to raw URLs, which are clickable in Telegram/iMessage/etc. with no
+special handling. Only if you are sending through a bridge that applies **Markdown
+parse mode** should you use `the-few digest ... --format markdown` (title-as-link) —
+otherwise the `[title](url)` syntax shows literally.
+
 ## Routing user intent
 
 For anything the user will *read*, prefer `digest` (clickable links, relay verbatim).
@@ -113,7 +118,7 @@ If the `the-few` command is missing or `~/.the-few/` doesn't exist:
 ## Command reference
 
 - `the-few brief [--show N] [--quiet]` — fetch new items; print the numbered title list
-- `the-few digest [--status ...] [--unread] [--source SLUG] [--since DATE] [--limit N]` — chat-ready message with clickable links (relay verbatim; default status: interested)
+- `the-few digest [--status ...] [--unread] [--source SLUG] [--since DATE] [--limit N] [--format plain|markdown]` — chat-ready message with clickable links (relay verbatim; default status: interested; default format raw URLs)
 - `the-few query [--status new|interested|dismissed] [--unread] [--source SLUG] [--contains TEXT] [--since YYYY-MM-DD] [--limit N] [--json]` — read interface (for ids/reasoning)
 - `the-few mark <id...> [--interested|--dismissed|--read|--unread]` — change state by id
 - `the-few open (<pos> | --id <id>) [--summary]` — read full text or LLM summary (marks read)
