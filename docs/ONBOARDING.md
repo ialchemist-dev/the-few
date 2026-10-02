@@ -35,6 +35,17 @@ verify, and schedule it (see `references/scheduling.md`).
 If the user has no strong opinions yet, offer one of these. Each is a
 complete `sources:` block they can paste into `sources.yaml`.
 
+> **Groups** are the laziest way to start: a group is a named bundle of
+> sources kept in `examples/groups/<name>.yaml`. The user picks a group,
+> the agent copies its `sources:` block into their `sources.yaml`, and
+> they're done. Current groups:
+>
+> - `ai-frontier` — official news from the frontier labs (OpenAI Blog +
+>   Anthropic News). The default recommendation.
+>
+> New groups are welcome as pull requests: one file per group, same
+> shape as `examples/groups/ai-frontier.yaml`.
+
 **AI labs tracker** — what the frontier labs officially publish:
 
 ```yaml

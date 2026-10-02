@@ -1,0 +1,21 @@
+# Group: AI Frontier
+#
+# Official news from the frontier labs, bundled so a new user can start
+# with one copy-paste. Copy the `sources:` block below into your
+# sources.yaml (or merge it with sources you add yourself).
+#
+# How to use: pick a group, copy its sources, run ./scripts/run-daily.sh,
+# schedule it. See docs/ONBOARDING.md.
+
+sources:
+  - name: "OpenAI Blog"
+    type: rss
+    channel: research
+    feed_url: "https://openai.com/blog/rss.xml"
+    notes: "official OpenAI announcements"
+
+  - name: "Anthropic News"
+    type: blog
+    channel: research
+    site_url: "https://www.anthropic.com/news"
+    notes: "official Anthropic announcements; no official RSS, HTML extraction"
