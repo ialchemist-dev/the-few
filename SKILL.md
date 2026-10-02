@@ -1,128 +1,82 @@
 ---
 name: the-few
-description: >
-  A finite, title-first attention gate over a few curated sources. Use when the user
-  asks "what's new in my feeds / blogs", "what am I interested in", "anything I
-  haven't read", "read me my headlines", wants to keep/dismiss/read an item, add a
-  source, or set up a scheduled briefing. Default flow shows titles only; full text
-  and LLM summaries load on demand.
-version: 0.1.0
-metadata:
-  openclaw:
-    emoji: "📡"
-    requires:
-      bins: [python3]
-    anyBins: [pipx, pip3, pip]
-    os: [macos, linux]
-    envVars:
-      - name: THE_FEW_HOME
-        required: false
-        description: Data directory (default ~/.the-few)
-      - name: DEEPSEEK_API_KEY
-        required: false
-        description: Enables LLM summaries (`open --summary`); the core flow needs no key
+description: Turn user-defined sources into a daily podcast. The user declares the sources they care about (people, blogs, channels — never platforms' recommendations); a background agent ingests each source's latest updates once a day, digests them into units, composes a single-host script, and synthesizes an MP3 episode while keeping the script. Use when the user wants a personal feed-to-podcast pipeline, wants to define or change their sources, or wants to run, debug, or extend the daily digest.
 ---
 
-## What The Few is
+# The Few
 
-A gate between the user and the firehose. They curate a few high-signal sources;
-The Few shows a short list of **what's new** (source · title · link), lets them
-**keep** the few worth their attention and **dismiss** the rest, and loads full
-text or an LLM summary only **on demand**. The scarce thing is their attention.
+A personal feed-to-podcast pipeline. The user defines their sources; a
+background agent does the rest, every day:
 
-State machine per item: `new → interested (kept) / dismissed`. Opening an item
-marks it `read`. "Interested but unread" is the user's live reading list.
-
-Data lives in `~/.the-few/` (the database + their `sources.toml`), never in the repo.
-
-## Replying to the user — the #1 rule
-
-**Every article you mention MUST include its original URL, verbatim, on its own
-line, so the user can click straight through.** Never drop, shorten, wrap, or
-"clean up" a link. The whole product is the click-through to the source.
-
-The easiest way to guarantee this: when the user wants to *see* their articles
-(what's new, what they're interested in, their reading list), run `the-few digest
-...` and **relay its output verbatim** — it already formats each item with the raw,
-clickable link. Use `the-few query --json` only when you need the data to reason or
-act (e.g. to find an id to `mark`), not as the thing you paste back.
-
-`digest` defaults to raw URLs, which are clickable in Telegram/iMessage/etc. with no
-special handling. Only if you are sending through a bridge that applies **Markdown
-parse mode** should you use `the-few digest ... --format markdown` (title-as-link) —
-otherwise the `[title](url)` syntax shows literally.
-
-## Routing user intent
-
-For anything the user will *read*, prefer `digest` (clickable links, relay verbatim).
-Use `query --json` only to get ids for `mark`/`open`.
-
-| User says | Action |
-|-----------|--------|
-| "what's new", "anything new in my blogs/feeds" | `the-few brief --quiet` to fetch, then `the-few digest --status new` and relay verbatim |
-| "what am I interested in", "my reading list" | `the-few digest --status interested` and relay verbatim |
-| "what haven't I read", "anything unread" | `the-few digest --status interested --unread` and relay verbatim |
-| "I'm interested in / keep #ID" | `the-few mark <id> --interested` |
-| "dismiss / not interested #ID" | `the-few mark <id> --dismissed` |
-| "read me / open / summarize #ID" | `the-few open --id <id> --summary` (or without `--summary` for full text) |
-| "mark #ID read" | `the-few mark <id> --read` |
-| "read the headlines aloud" | `the-few say` (after a `brief` or `list`) |
-| "what sources do I follow" | `the-few sources` |
-| "add a source" | Edit `~/.the-few/sources.toml` (see Adding a source below), then `the-few brief` |
-| "my daily briefing" | See Digest below |
-
-**Always pass `--json` for programmatic reads** and act on items by their stable
-`id` (from the JSON), not by list position. The JSON shape per item is:
-`{id, source, source_name, title, link, published, status, read}`.
-
-## Digest (what to send the user)
-
-`the-few digest` prints a chat-ready message with a clickable link per item — send
-its output to the user **verbatim**. A good briefing = new items + kept-but-unread:
-
-```bash
-the-few brief --quiet                          # fetch the latest
-the-few digest --status new                    # newly surfaced (relay verbatim)
-the-few digest --status interested --unread    # kept, not yet read (relay verbatim)
+```
+sources.yaml → ingest → digest → compose → synthesize → episode.mp3 + script.txt
 ```
 
-Offer to `open` anything they want in full or summarized. For a scheduled briefing,
-run this on a cron and post the digest output to the user's chat.
+## The contract
 
-## Adding a source
+1. **User-defined sources only.** The pipeline never pulls from anything
+   outside `sources.yaml`. No recommendations, no trending, no filler.
+2. **Follow people, not platforms.** Each source is a person, author, or
+   editorial voice — not an algorithmic feed.
+3. **Daily, unattended.** Ingest runs on a schedule (cron). The agent
+   needs no prompting once sources are defined.
+4. **Podcast + script.** Every episode ships as audio *and* its full
+   script. The script is the durable artifact; audio is the interface.
+5. **Content only.** Episodes never explain how they were made, what the
+   selection logic is, or the philosophy behind the pipeline.
 
-Append a `[[sources]]` block to `~/.the-few/sources.toml`:
+## Quick start
 
-```toml
-[[sources]]
-name = "Example Blog"
-slug = "example"
-url = "https://example.com/blog"
-fetch = "html_list"      # or "sitemap" if the sitemap has <lastmod> dates
-link_pattern = "/blog/"
-base = "https://example.com"
-tags = ["topic"]
-```
+1. Copy `examples/sources.yaml` to `sources.yaml` and list your sources.
+   See `references/source-schema.md` for the full schema.
+2. Run the daily pipeline:
+   ```
+   ./scripts/run-daily.sh --date 2026-09-28
+   ```
+   This ingests, digests, composes, and synthesizes one episode per
+   channel. Outputs land in `data/episodes/YYYY-MM-DD/`.
+3. Schedule it: add a cron entry calling `run-daily.sh` (see
+   `references/scheduling.md`).
 
-Then `the-few brief` picks it up. Keep the list small — curation is the point.
+## Layout
 
-## Setup
+- `SKILL.md` — this file; the agent-readable entry point.
+- `sources.yaml` — (you create) the user's defined sources.
+- `references/` — durable docs: architecture, source schema, script
+  conventions, prompt templates, scheduling, TTS backend notes.
+- `scripts/` — the pipeline: `ingest.py`, `digest.py`, `compose.py`,
+  `synthesize.sh`, `run-daily.sh`.
+- `examples/` — example `sources.yaml` and example episode output.
+- `data/` — runtime outputs (units, scripts, episodes). Git-ignored.
 
-If the `the-few` command is missing or `~/.the-few/` doesn't exist:
+## Pipeline stages
 
-1. Install the CLI: `pipx install the-few` (preferred on macOS), or `pip3 install
-   the-few` / `pip install the-few`.
-2. Run `the-few setup` (creates `~/.the-few/` with a starter source list + database).
-3. Optional: export `DEEPSEEK_API_KEY` to enable `open --summary`.
+**ingest** (`scripts/ingest.py`): for each source in `sources.yaml`,
+fetch new items since the last run (tracked in `data/state.json`).
+Source types: `rss`, `youtube`, `blog`, `x`, `linkedin`. Types that need
+credentials or login (`x`, `linkedin`) degrade gracefully — they log a
+warning and skip, never fail the run. Output: `data/units/YYYY-MM-DD.json`.
 
-## Command reference
+**digest** (`scripts/digest.py`): dedupe by URL/id, drop empties, rank by
+recency, group by channel. Output: `data/digested/YYYY-MM-DD.json`.
 
-- `the-few brief [--show N] [--quiet]` — fetch new items; print the numbered title list
-- `the-few digest [--status ...] [--unread] [--source SLUG] [--since DATE] [--limit N] [--format plain|markdown]` — chat-ready message with clickable links (relay verbatim; default status: interested; default format raw URLs)
-- `the-few query [--status new|interested|dismissed] [--unread] [--source SLUG] [--contains TEXT] [--since YYYY-MM-DD] [--limit N] [--json]` — read interface (for ids/reasoning)
-- `the-few mark <id...> [--interested|--dismissed|--read|--unread]` — change state by id
-- `the-few open (<pos> | --id <id>) [--summary]` — read full text or LLM summary (marks read)
-- `the-few keep <pos...>` / `the-few done <pos...>` — interactive triage by list position
-- `the-few list` — the reading list (kept items)
-- `the-few say [--voice NAME] [--rate WPM] [--out FILE]` — read current titles aloud
-- `the-few sources` — list curated sources
+**compose** (`scripts/compose.py`): one single-host script per channel,
+using the prompt template in `references/prompts.md`. Script conventions
+in `references/script-conventions.md`. Output:
+`data/episodes/YYYY-MM-DD/<channel>-script.txt`.
+
+**synthesize** (`scripts/synthesize.sh`): text-to-speech via the
+configured backend (see `references/tts-backends.md`). Output:
+`data/episodes/YYYY-MM-DD/<channel>.mp3`.
+
+## Conventions for agents working here
+
+- Read `references/architecture.md` before changing the pipeline.
+- Source schema changes go in `references/source-schema.md` first.
+- Prompt improvements go in `references/prompts.md` — the pipeline
+  reads prompts from there, not from code.
+- Never commit `data/` or `sources.yaml` (personal). Commit
+  `examples/` instead.
+- Keep every stage independently runnable and its output inspectable.
+  An agent should be able to re-run `compose` without re-running
+  `ingest`.

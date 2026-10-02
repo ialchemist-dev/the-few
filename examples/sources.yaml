@@ -1,0 +1,56 @@
+# Example sources.yaml — copy to sources.yaml and make it yours.
+version: 1
+
+channels:
+  - id: research
+    name: "Research Digest"
+    language: en
+    voice: default
+    max_minutes: 12
+
+  - id: personal
+    name: "Personal Briefing"
+    language: en
+    voice: default
+    max_minutes: 6
+
+sources:
+  - name: "3Blue1Brown"
+    type: youtube
+    channel: research
+    handle: "3blue1brown"
+    notes: "Grant Sanderson's math channel"
+
+  - name: "Elon Musk"
+    type: x
+    channel: research
+    username: "elonmusk"
+    notes: "needs API or session; skipped gracefully without it"
+
+  - name: "OpenAI Blog"
+    type: rss
+    channel: research
+    feed_url: "https://openai.com/blog/rss.xml"
+
+  - name: "Anthropic News"
+    type: blog
+    channel: research
+    site_url: "https://www.anthropic.com/news"
+    notes: "no official RSS; HTML extraction lands after v0.1"
+
+  - name: "Ethan Mollick"
+    type: rss
+    channel: research
+    feed_url: "https://www.oneusefulthing.org/feed"
+
+  - name: "北美王路飞"
+    type: linkedin
+    channel: research
+    # profile_url: "https://www.linkedin.com/in/<handle>"  # TODO: fill in during setup
+    notes: "mainly LinkedIn and other public updates; needs a login session"
+
+  - name: "Google DeepMind"
+    type: blog
+    channel: research
+    site_url: "https://deepmind.google/discover/blog/"
+    notes: "Google AI official announcements; no official RSS known — verify blog structure during setup"

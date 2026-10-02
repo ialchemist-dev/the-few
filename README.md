@@ -1,86 +1,87 @@
 # The Few
 
-> "Never in the field of human conflict was so much owed by so many to so few." — Churchill
+Your sources. Your podcast. Every day.
 
-A gate between you and the firehose. Instead of streaming endless low-signal
-candidates (LinkedIn, YouTube, TikTok), you curate a few sources that publish
-valuable content publicly, get a short **title-only** list of what's new, keep the
-handful worth your attention, and dismiss the rest forever. Detail loads only when
-you ask for it. The scarce thing is your attention — so the gate is cheap by design.
+The Few is a personal feed-to-podcast pipeline with one rule: **you define
+the sources, nothing else gets in.** A background agent checks your sources
+once a day, pulls their latest updates, and turns them into a podcast
+episode — with the full script kept alongside the audio.
 
-The atom is a **source**, not a person. (Following people for their best thinking
-fails — perspective increasingly hides behind paywalls. Publications and orgs, by
-contrast, publish high-signal content publicly, at a steady cadence.)
+No recommendations. No trending tabs. No algorithmic feed. Just the people
+and publications you chose, read to you.
+
+## New here? Start in one sitting
+
+Hand this repo to your agent (or a friend's) and answer six questions:
+who to follow, any official blogs, how many episodes, how long, what
+language, what the host is called. The full script is in
+[`docs/ONBOARDING.md`](docs/ONBOARDING.md) — it includes recommended
+starter packs (AI labs tracker, learning & thinking) you can paste
+straight into `sources.yaml`.
 
 ## How it works
 
 ```
-brief (titles only) → keep / dismiss → list (your kept items) → open (detail on demand)
+You define sources (sources.yaml)
+        ↓  daily, automatic
+Agent ingests each source's latest updates
+        ↓
+Updates → digest → single-host script → MP3 episode
+        ↓
+data/episodes/2026-09-28/research.mp3 (+ research-script.txt)
 ```
 
-The triage state machine is the whole point:
+## Install
 
-```
-new ──(you keep it)──▶ interested   (reading list; persists)
-    ──(you don't)────▶ dismissed     (archived; never shown again)
-```
-
-Default flow touches **no LLM** — `brief` shows titles, dates, and links. The only
-paid step is `open --summary`, and it runs only on an item you chose to keep.
-
-## Setup
+Prerequisites: Python 3.10+, `ffmpeg`, a TTS backend (see
+`references/tts-backends.md`).
 
 ```bash
-pip install -e .       # or: pipx install the-few
-the-few setup          # creates ~/.the-few/ with a starter source list + database
+git clone <this-repo> the-few
+cd the-few
+pip install -r requirements.txt
+cp examples/sources.yaml sources.yaml   # then edit: your sources
+./scripts/run-daily.sh                  # run once now
 ```
 
-Your data and source list live in `~/.the-few/` (override with `THE_FEW_HOME`), not
-in the repo — so nothing personal is ever committed. Edit `~/.the-few/sources.toml`
-to curate your sources. No API key is needed for the core flow; a key is only
-required for `open --summary`.
+Schedule it daily (cron example — 7:14 AM):
 
-## Usage
-
-```bash
-the-few brief          # fetch new items; show today's numbered title list
-the-few keep 1 3 5     # keep those (→ reading list); dismiss the rest of the brief
-the-few list           # show your reading list (kept items)
-the-few open 2         # read item 2 in full
-the-few open 2 --summary   # ...or get an LLM summary (needs a key)
-the-few say            # read the current titles aloud (macOS `say`)
-the-few done 2         # archive item 2 from the reading list
-the-few digest --status interested --unread   # chat-ready message with clickable links
-the-few sources        # list your curated sources
+```cron
+14 7 * * * /path/to/the-few/scripts/run-daily.sh >> /path/to/the-few/data/cron.log 2>&1
 ```
 
-For agents/automation: `the-few query [filters] --json` (read) and `the-few mark
-<id> --interested|--dismissed|--read` (write) operate on stable item ids; `the-few
-digest [filters]` prints a ready-to-send message where every item carries its raw,
-clickable link.
+## Defining sources
 
-`brief` prints to stdout, progress to stderr. Numbers refer to the last
-`brief`/`list` you ran, so `keep 1 3` / `open 2` always mean "from what I just saw".
+`sources.yaml` is the whole product. Example:
 
-### Options
+```yaml
+sources:
+  - name: "3Blue1Brown"
+    type: youtube
+    channel: research
+    handle: "3blue1brown"
 
-- `--max-new N` — cap new items ingested per source per run (default 5).
-- `--show N` — daily cap on items shown in a brief (default 30).
-- `--db PATH`, `--config PATH` — override the SQLite store / source list locations.
+  - name: "Ethan Mollick"
+    type: rss
+    channel: research
+    feed_url: "https://www.oneusefulthing.org/feed"
+```
 
-### Summaries (optional, `open --summary`)
+Full schema: `references/source-schema.md`. Source types: `rss`,
+`youtube`, `blog`, `x`, `linkedin`.
 
-Uses **DeepSeek** by default (cheap, OpenAI-compatible). Configure via env:
+## For agents
 
-- `DEEPSEEK_API_KEY` (or `THE_FEW_API_KEY`) — your key.
-- `THE_FEW_MODEL` — default `deepseek-chat` (try `deepseek-reasoner` for R1).
-- `THE_FEW_BASE_URL` — default `https://api.deepseek.com`. Since it's just an
-  OpenAI-compatible endpoint, you can point this (and `THE_FEW_MODEL`) at any
-  compatible provider — OpenAI, a local Ollama, etc.
+This repo is a skill: `SKILL.md` is the agent-readable entry point.
+Agents (Muse, or any agent that reads skills) can install, configure,
+run, and extend the pipeline from these docs alone.
 
 ## Status
 
-v0: the **title-first attention gate** — `brief → keep → list → open` — works end to
-end over one source, with on-demand detail and summaries. Next: voice briefing (read
-the titles aloud, triage by reply) and more sources (RSS / sitemap discovery). See
-`THE_FEW_PLAN.md` for the broader vision.
+v0.1 — framework. Pipeline skeleton, source schema, script conventions,
+and prompt templates are in place. Prompt quality for natural-sounding
+episodes is the next iteration (see `references/prompts.md`).
+
+## License
+
+MIT — see [LICENSE](LICENSE).
