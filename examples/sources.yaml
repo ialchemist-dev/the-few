@@ -27,6 +27,12 @@ sources:
     username: "elonmusk"
     notes: "needs API or session; skipped gracefully without it"
 
+  - name: "Andrej Karpathy"
+    type: x
+    channel: research
+    username: "karpathy"
+    notes: "needs API or session; skipped gracefully without it"
+
   - name: "OpenAI News"
     type: rss
     channel: research
@@ -37,31 +43,31 @@ sources:
     type: blog
     channel: research
     site_url: "https://openai.com/research/"
-    notes: "research papers and publications; no official RSS — needs HTML extraction"
+    notes: "verified 2026-10-05: openai.com/research/ is an overview landing page — its publications all link to /index/ items already covered by the OpenAI News RSS; no separate scrape needed"
 
   - name: "OpenAI Index"
     type: blog
     channel: research
     site_url: "https://openai.com/index/"
-    notes: "announcements index; no official RSS — needs HTML extraction"
+    notes: "verified 2026-10-05: the OpenAI News RSS already contains all /index/ announcements (1178 links, with pubDates) — covered via OpenAI News, no separate scrape needed"
 
   - name: "Anthropic News"
-    type: blog
+    type: anthropic
     channel: research
-    site_url: "https://www.anthropic.com/news"
-    notes: "no official RSS; HTML extraction lands after v0.1"
+    section: news
+    notes: "verified 2026-10-05: no official RSS; listing cards scraped from https://www.anthropic.com/news"
 
   - name: "Anthropic Research"
-    type: blog
+    type: anthropic
     channel: research
-    site_url: "https://www.anthropic.com/research"
-    notes: "research publications; no official RSS — needs HTML extraction"
+    section: research
+    notes: "verified 2026-10-05: no official RSS; listing cards scraped from https://www.anthropic.com/research"
 
   - name: "Anthropic Engineering"
-    type: blog
+    type: anthropic
     channel: research
-    site_url: "https://www.anthropic.com/engineering"
-    notes: "engineering blog; no official RSS — needs HTML extraction"
+    section: engineering
+    notes: "verified 2026-10-05: no official RSS; page is client-rendered — discovered via the official sitemap, titles from article og:title"
 
   - name: "Ethan Mollick"
     type: rss
