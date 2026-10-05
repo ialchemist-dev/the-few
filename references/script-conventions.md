@@ -19,7 +19,7 @@ parseable by any TTS backend and pleasant to hear.
 
 1. One-sentence open: what today covers, no throat-clearing.
 2. One section per source item, newest first. Each section: what
-   happened → why it matters → one concrete detail.
+   happened, then the key facts exactly as the source states them.
 3. One-sentence close. No recap of the whole episode, no "thanks for
    listening" filler.
 
@@ -27,8 +27,14 @@ parseable by any TTS backend and pleasant to hear.
 
 - **Content only.** Never mention how the episode was generated, the
   selection logic, or the pipeline's philosophy.
+- **Report and summarize — nothing more.** The host is a reporter and
+  summarizer of the given updates. No interpretation, no analysis, no
+  editorial framing, no "why it matters" — the item speaks for itself.
+- **No connections.** Never connect one item to another, never relate
+  an item to past coverage or earlier episodes, never synthesize a
+  through-line. Each section stands alone.
 - **Source-grounded.** Every claim traces to a unit in the digest.
-  The composer may compress and connect, but not invent.
+  The composer may compress and restate faithfully, but not invent.
 - **No cross-contamination.** A channel's episode uses only that
   channel's units.
 - Target length comes from the channel's `max_minutes`; prefer cutting

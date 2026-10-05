@@ -27,16 +27,41 @@ sources:
     username: "elonmusk"
     notes: "needs API or session; skipped gracefully without it"
 
-  - name: "OpenAI Blog"
+  - name: "OpenAI News"
     type: rss
     channel: research
-    feed_url: "https://openai.com/blog/rss.xml"
+    feed_url: "https://openai.com/news/rss.xml"
+    notes: "official announcements + blog posts; verified 2026-10-05"
+
+  - name: "OpenAI Research"
+    type: blog
+    channel: research
+    site_url: "https://openai.com/research/"
+    notes: "research papers and publications; no official RSS — needs HTML extraction"
+
+  - name: "OpenAI Index"
+    type: blog
+    channel: research
+    site_url: "https://openai.com/index/"
+    notes: "announcements index; no official RSS — needs HTML extraction"
 
   - name: "Anthropic News"
     type: blog
     channel: research
     site_url: "https://www.anthropic.com/news"
     notes: "no official RSS; HTML extraction lands after v0.1"
+
+  - name: "Anthropic Research"
+    type: blog
+    channel: research
+    site_url: "https://www.anthropic.com/research"
+    notes: "research publications; no official RSS — needs HTML extraction"
+
+  - name: "Anthropic Engineering"
+    type: blog
+    channel: research
+    site_url: "https://www.anthropic.com/engineering"
+    notes: "engineering blog; no official RSS — needs HTML extraction"
 
   - name: "Ethan Mollick"
     type: rss
