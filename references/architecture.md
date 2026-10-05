@@ -101,6 +101,27 @@ The digest's atomic item. Every ingested item becomes a unit:
 }
 ```
 
+## Content identity & dedup
+
+A unit's `id` is only unique per ingestion. The SAME underlying content
+arriving through ANY channel (RSS, browser check, manual save) must map
+to the SAME identity, or it will be digested twice. Every unit therefore
+also gets a deterministic **content hash**:
+
+- If the unit carries a URL, the hash is over the canonicalized URL:
+  fragment dropped, all query/tracking params stripped, host lowercased,
+  `twitter.com` → `x.com`, `www.` stripped, trailing slash dropped.
+  The path alone identifies the content for every source type we cover
+  (article slug, video id, status id).
+- Otherwise the hash is over normalized `source + title` text
+  (lowercased, punctuation/whitespace collapsed).
+
+Dedup keeps an append-only registry of content hashes already digested.
+A unit is only eligible when BOTH its unit id and its content hash are
+unseen; within one batch, duplicate hashes collapse to the longest body.
+The registry starts with the first run that adopts this rule — earlier
+episodes are covered by unit-id dedup only.
+
 ## Design principles
 
 - **Files over services.** State is JSON on disk. Any agent with a
